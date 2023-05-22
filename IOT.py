@@ -136,18 +136,16 @@ def peoples_information(picture):
         picture : str
             The image path for display the image
     """
-    image_path = picture
-    # Read the image into a byte array
-    image_data = open(image_path, "rb").read()
+    
     headers = {'Ocp-Apim-Subscription-Key': SUBSCRIPTION_KEY,
                'Content-Type': 'application/octet-stream'}
     params = {
         'returnFaceId': 'true',
         'returnFaceLandmarks': 'false',
-        'returnFaceAttributes': 'age,gender,headPose,smile,facialHair,glasses,emotion,hair,makeup,occlusion,accessories,blur,exposure,noise',
+        'returnFaceAttributes': 'age,gender,headPose,smile,facialHair,glasses,emotion,hair,makeup,occlusion,accessories,blur,exposure,noise,name',
     }
     response = requests.post(
-        BASE_URL + "detect/", headers=headers, params=params, data=image_data)
+        BASE_URL + "detect/", headers=headers, params=params, data=picture)
     analysis = response.json()  # convert a json file to a dictionary in a list
     return analysis
 
@@ -160,7 +158,8 @@ def print_people(group_id):
         group_id : int
             The corresponding group id to show the information
     """
-    print(CF.person.lists(group_id))
+    for dic in CF.person.lists(group_id):
+        print(dic)
     return CF.person.lists(group_id)
 
 
@@ -295,140 +294,6 @@ def bbox_to_bytes(bbox_array):
         (str(b64encode(iobuf.getvalue()), 'utf-8')))
 
     return bbox_bytes
-
-# JavaScript to properly create our live video stream using our webcam as input
-
-
-def video_stream():
-    js = Javascript('''
-    var video;
-    var div = null;
-    var stream;
-    var captureCanvas;
-    var imgElement;
-    var labelElement;
-
-    var pendingResolve = null;
-    var shutdown = false;
-
-    function removeDom() {
-       stream.getVideoTracks()[0].stop();
-       video.remove();
-       div.remove();
-       video = null;
-       div = null;
-       stream = null;
-       imgElement = null;
-       captureCanvas = null;
-       labelElement = null;
-    }
-
-    function onAnimationFrame() {
-      if (!shutdown) {
-        window.requestAnimationFrame(onAnimationFrame);
-      }
-      if (pendingResolve) {
-        var result = "";
-        if (!shutdown) {
-          captureCanvas.getContext('2d').drawImage(video, 0, 0, 640, 480);
-          result = captureCanvas.toDataURL('image/jpeg', 0.8)
-        }
-        var lp = pendingResolve;
-        pendingResolve = null;
-        lp(result);
-      }
-    }
-
-    async function createDom() {
-      if (div !== null) {
-        return stream;
-      }
-
-      div = document.createElement('div');
-      div.style.border = '2px solid black';
-      div.style.padding = '3px';
-      div.style.width = '100%';
-      div.style.maxWidth = '600px';
-      document.body.appendChild(div);
-
-      const modelOut = document.createElement('div');
-      modelOut.innerHTML = "<span>Status:</span>";
-      labelElement = document.createElement('span');
-      labelElement.innerText = 'No data';
-      labelElement.style.fontWeight = 'bold';
-      modelOut.appendChild(labelElement);
-      div.appendChild(modelOut);
-
-      video = document.createElement('video');
-      video.style.display = 'block';
-      video.width = div.clientWidth - 6;
-      video.setAttribute('playsinline', '');
-      video.onclick = () => { shutdown = true; };
-      stream = await navigator.mediaDevices.getUserMedia(
-          {video: { facingMode: "environment"}});
-      div.appendChild(video);
-
-      imgElement = document.createElement('img');
-      imgElement.style.position = 'absolute';
-      imgElement.style.zIndex = 1;
-      imgElement.onclick = () => { shutdown = true; };
-      div.appendChild(imgElement);
-
-      const instruction = document.createElement('div');
-      instruction.innerHTML =
-          '<span style="color: red; font-weight: bold;">' +
-          'When finished, click here or on the video to stop this demo</span>';
-      div.appendChild(instruction);
-      instruction.onclick = () => { shutdown = true; };
-
-      video.srcObject = stream;
-      await video.play();
-
-      captureCanvas = document.createElement('canvas');
-      captureCanvas.width = 640; //video.videoWidth;
-      captureCanvas.height = 480; //video.videoHeight;
-      window.requestAnimationFrame(onAnimationFrame);
-
-      return stream;
-    }
-    async function stream_frame(label, imgData) {
-      if (shutdown) {
-        removeDom();
-        shutdown = false;
-        return '';
-      }
-
-      var preCreate = Date.now();
-      stream = await createDom();
-
-      var preShow = Date.now();
-      if (label != "") {
-        labelElement.innerHTML = label;
-      }
-
-      if (imgData != "") {
-        var videoRect = video.getClientRects()[0];
-        imgElement.style.top = videoRect.top + "px";
-        imgElement.style.left = videoRect.left + "px";
-        imgElement.style.width = videoRect.width + "px";
-        imgElement.style.height = videoRect.height + "px";
-        imgElement.src = imgData;
-      }
-
-      var preCapture = Date.now();
-      var result = await new Promise(function(resolve, reject) {
-        pendingResolve = resolve;
-      });
-      shutdown = false;
-
-      return {'create': preShow - preCreate,
-              'show': preCapture - preShow,
-              'capture': Date.now() - preCapture,
-              'img': result};
-    }
-    ''')
-
-    display(js)
 
 
 def video_frame(label, bbox):
@@ -623,7 +488,7 @@ def create_instances(group_id, analysis, person_id, name, picture, information1,
     """
     # Create a politic
     if group_id == 10:
-        with open("politicians.bin", "ab") as f:
+        with open("students.bin", "ab") as f:
             politician = Political(analysis[0]['faceId'], person_id, name,
                                    analysis[0]['faceAttributes']['age'],
                                    analysis[0]['faceAttributes']['gender'],
@@ -631,27 +496,6 @@ def create_instances(group_id, analysis, person_id, name, picture, information1,
             print(politician.name, politician.person_id)
             pickle.dump(politician, f, pickle.HIGHEST_PROTOCOL)
 
-    # Create a interviewer
-    elif group_id == 20:
-        with open("interviewers.bin", "ab") as f:
-            interviewer = Interviewer(analysis[0]['faceId'], person_id, name,
-                                      analysis[0]['faceAttributes']['age'],
-                                      analysis[0]['faceAttributes']['gender'],
-                                      picture, information1, information2)
-            print(interviewer.name, interviewer.person_id)
-            pickle.dump(interviewer, f, pickle.HIGHEST_PROTOCOL)
-
-    # Create a guest
-    elif group_id == 30:
-        with open("guests.bin", "ab") as f:
-            guest = Guest(analysis[0]['faceId'], person_id, name,
-                          analysis[0]['faceAttributes']['age'],
-                          analysis[0]['faceAttributes']['gender'],
-                          picture, information1, information2)
-            print(guest.name, guest.person_id)
-            pickle.dump(guest, f, pickle.HIGHEST_PROTOCOL)
-
-    # Show the image
     show_image_with_square(picture, analysis)
 
 
@@ -717,43 +561,32 @@ def prototype():
         if not ret:
             break
         
-        if count == j:
-            # se guarda el fotograma con el nombre más el número del contador i
-            cv2.imwrite('C:/Users/josuc/Desktop/IOT/Imagenes' +
-                        'nombre'+str(j)+'.jpg', frame)
-            image_path = 'C:/Users/josuc/Desktop/IOT/Imagenes' + \
-                'nombre'+str(j)+'.jpg'
-            analysis = peoples_information(image_path)
-            print("Imagen: " + 'nombre'+str(j)+'.jpg')
-            
+    
+        # se guarda el fotograma con el nombre más el número del contador i
+        cv2.imwrite('C:/Users/josuc/Desktop/IOT/Imagenes' +
+                    'nombre'+str(j)+'.jpg', frame)
+        image_path = 'C:/Users/josuc/Desktop/IOT/Imagenes' + \
+            'nombre'+str(j)+'.jpg'
+        analysis = peoples_information(image_path)
+        print("Imagen: " + 'nombre'+str(j)+'.jpg')
+        
+        try:
+            nombres = recognize_person(image_path, 10)
+        except:
             try:
-                nombres = recognize_person(image_path, 10)
+                nombres = recognize_person(image_path, 20)
             except:
                 try:
-                    nombres = recognize_person(image_path, 20)
+                    nombres = recognize_person(image_path, 30)
                 except:
-                    try:
-                        nombres = recognize_person(image_path, 30)
-                    except:
-                        print("")
+                    print("")
+        
+        for nombre in nombres:
+            print(nombre)
+
             
-            for nombre in nombres:
-                markAttendance(nombre)
-            
-            for dic in analysis:
-                fa = dic['faceAttributes']
-                gender = fa['gender']
-                age = fa['age']
-                age = int(age)
-                emotion = fa['emotion']
-                happiness = emotion['happiness']
-                sadness = emotion['sadness']
-                anger = emotion['anger']
-                print("Género: ", gender, " Edad: ", age, "Felicidad: ",
-                    happiness, " Tristeza: ", sadness, " Enojo: ", anger)
-            j += 1
         # Liberar los recursos de la cámara
         cap.release()
-        count += 1
-create_person("Kimberly", "Engineer", "C:/Users/josuc/Desktop/IOT/Alumnos/Kim.jpg", 10,"KIm lives in Aguas Zarcas", "Kim likes Dance" )
+        
 prototype()
+

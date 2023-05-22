@@ -8,7 +8,7 @@ import csv
 from zmq import NULL
 
 
-path = 'C:/Users/josuc/Desktop/IOT/Alumnos'
+path = 'C:/Users/josuc/Desktop/Proyecto_Estructuras_2/Alumnos'
 
 images = []
 classNames = []
@@ -32,31 +32,36 @@ def agregar_fila(archivo, fila):
         f.write(fila + '\n')
 
 def markAttendance(name):
-    nombres = []
+    datos = []
+    
     with open('Attendance.txt', 'r') as f:
         for line in f:
             # Separar los elementos de cada línea por comas
             elements = line.strip().split(',')
             # Agregar el primer elemento de la línea a la lista de nombres
-            nombres.append(elements[0])
-    
-    if not name in nombres:
+            datos.append(elements[0]+elements[2])
+            
 
-        with open('Attendance.txt', mode='a') as file:
+    now = datetime.now()
+    todayDate = now.strftime('%d-%B-%Y')
+    dato = name+todayDate
+    print(datos)
+    if not dato in datos:
+            with open('Attendance.txt', mode='a') as file:
 
-            now = datetime.now()
-            time = now.strftime('%I:%M:%S:%p')
-            date = now.strftime('%d-%B-%Y')
-            newData = [name, time, date]
-            
-            # Convertir la lista newData en una cadena separada por comas
-            newLine = ','.join(newData)
-            
-            # Agregar un salto de línea al final de la cadena
-            newLine += '\n'
-            
-            # Escribir la nueva línea en el archivo
-            file.writelines(newLine)
+                now = datetime.now()
+                time = now.strftime('%I:%M:%S:%p')
+                date = now.strftime('%d-%B-%Y')
+                newData = [name, time, date]
+                
+                # Convertir la lista newData en una cadena separada por comas
+                newLine = ','.join(newData)
+                
+                # Agregar un salto de línea al final de la cadena
+                newLine += '\n'
+                
+                # Escribir la nueva línea en el archivo
+                file.writelines(newLine)
 
 
         
