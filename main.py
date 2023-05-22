@@ -40,7 +40,7 @@ def markAttendance(name):
             elements = line.strip().split(',')
             # Agregar el primer elemento de la línea a la lista de nombres
             datos.append(elements[0]+elements[2])
-            
+        
 
     now = datetime.now()
     todayDate = now.strftime('%d-%B-%Y')
@@ -63,8 +63,15 @@ def markAttendance(name):
                 # Escribir la nueva línea en el archivo
                 file.writelines(newLine)
 
+def mostraPersonasPresentes():
+    personasPresentes = []
+    with open('Attendance.txt', mode='r') as file:
+        for line in file:
+            elements = line.strip().split(',')
+            if not elements[0] in personasPresentes:
+                personasPresentes.append(elements[0])
+    return personasPresentes
 
-        
 def __main__(): 
     # take pictures from webcam 
     cap  = cv2.VideoCapture(0)
@@ -94,4 +101,5 @@ def __main__():
             break
 
 if __name__ == '__main__':
-    __main__()
+    for persona in mostraPersonasPresentes():
+        print(persona)
