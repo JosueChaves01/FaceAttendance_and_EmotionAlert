@@ -101,5 +101,4 @@ def __main__():
             break
 
 if __name__ == '__main__':
-    for persona in mostraPersonasPresentes():
-        print(persona)
+    __main__()
